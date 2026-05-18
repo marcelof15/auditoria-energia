@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>MB Energia — Auditoria COSERN + Origo</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Arial,sans-serif;background:#f0f3f8;color:#1a1a2e;}
+.header{background:#1a3560;color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;}
+.header h1{font-size:18px;font-weight:700;}
+.header p{font-size:12px;opacity:.7;margin-top:2px;}
+.logo{display:flex;align-items:center;gap:12px;}
+.logo-icon{font-size:28px;}
+.app{max-width:1100px;margin:0 auto;padding:24px;}
+.card{background:#fff;border-radius:10px;border:1px solid #dde3f0;padding:20px;margin-bottom:16px;}
+.card-title{font-size:13px;font-weight:700;color:#1a3560;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.drop-zone{border:2px dashed #b0bdd8;border-radius:8px;padding:32px;text-align:center;cursor:pointer;transition:all .2s;background:#f8faff;}
+.drop-zone:hover,.drop-zone.over{border-color:#1a3560;background:#eef2fb;}
+.drop-zone input{display:none;}
+.drop-zone .icon{font-size:36px;margin-bottom:8px;display:block;}
+.drop-zone p{font-size:13px;color:#666;}
+.drop-zone .sub{font-size:11px;color:#999;margin-top:4px;}
+.file-list{margin-top:12px;display:flex;flex-direction:column;gap:6px;}
+.file-pill{display:flex;align-items:center;gap:8px;background:#f0f3f8;border-radius:6px;padding:7px 12px;font-size:12px;}
+.file-pill .fn{flex:1;font-weight:600;color:#1a3560;}
+.file-pill .tp{font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;}
+.tp-cosern{background:#fff3cd;color:#856404;}
+.tp-origo{background:#d1f0e0;color:#1a6b3c;}
+.tp-?{background:#f0f0f0;color:#888;}
+.file-pill .rm{background:none;border:none;cursor:pointer;color:#999;font-size:16px;margin-left:auto;}
+.file-pill .rm:hover{color:#e53e3e;}
+
+.btn-run{width:100%;padding:14px;background:#1a3560;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;transition:background .2s;}
+.btn-run:hover{background:#142a4d;}
+.btn-run:disabled{opacity:.4;cursor:not-allowed;}
+.progress{background:#e0e4ef;border-radius:6px;height:6px;overflow:hidden;margin-top:10px;}
+.progress-bar{height:100%;background:#1a3560;border-radius:6px;transition:width .4s;width:0%;}
+.status-msg{font-size:12px;color:#666;margin-top:6px;min-height:16px;}
+
+/* METRICAS */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
+.metric{background:#fff;border-radius:10px;border:1px solid #dde3f0;padding:14px 16px;}
+.metric .lbl{font-size:11px;color:#888;margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+.metric .val{font-size:22px;font-weight:700;color:#1a3560;}
+.metric .val.ok{color:#17873f;}
+.metric .val.warn{color:#c85a00;}
+.metric .val.err{color:#c0392b;}
+.metric .sub{font-size:11px;color:#aaa;margin-top:3px;}
+
+/* ALERTAS */
+.alerta{border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:8px;display:flex;gap:8px;align-items:flex-start;}
+.alerta.err{background:#fde8e8;border:1px solid #f5c6c6;color:#8b1a1a;}
+.alerta.warn{background:#fff8e1;border:1px solid #ffe082;color:#7e5200;}
+
+/* TABELA */
+.tbl-wrap{overflow-x:auto;border-radius:8px;border:1px solid #dde3f0;}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+th{text-align:left;padding:10px 12px;font-size:11px;font-weight:700;color:#fff;background:#1a3560;white-space:nowrap;}
+td{padding:10px 12px;border-bottom:1px solid #eef0f7;color:#333;white-space:nowrap;vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:#f8faff;}
+td.strong{font-weight:700;color:#1a1a2e;}
+td.ok{color:#17873f;font-weight:700;}
+td.warn{color:#c85a00;font-weight:700;}
+td.err{color:#c0392b;font-weight:700;}
+.tag{display:inline-block;font-size:10px;padding:3px 9px;border-radius:10px;font-weight:700;white-space:nowrap;}
+.tag.ok{background:#d1f0e0;color:#1a6b3c;}
+.tag.warn{background:#fff3cd;color:#856404;}
+.tag.err{background:#fde8e8;color:#8b1a1a;}
+
+/* DETALHE */
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;}
+.detail-card{background:#f8faff;border-radius:8px;padding:14px;border:1px solid #dde3f0;}
+.detail-card h4{font-size:12px;font-weight:700;color:#1a3560;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #dde3f0;}
+.dr{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;}
+.dr .dl{color:#666;}
+.dr .dv{font-weight:600;color:#1a1a2e;}
+.dr .dv.ok{color:#17873f;}
+.dr .dv.warn{color:#c85a00;}
+.dr .dv.err{color:#c0392b;}
+.dr .dv.accent{color:#1a3560;font-size:13px;}
+.sep{border:none;border-top:1px solid #dde3f0;margin:6px 0;}
+
+/* EXPORT */
+.export-row{display:flex;gap:10px;margin-top:12px;}
+.btn-exp{padding:9px 18px;border-radius:6px;border:1px solid #dde3f0;background:#fff;font-size:12px;font-weight:700;cursor:pointer;color:#1a3560;transition:all .15s;}
+.btn-exp:hover{background:#f0f3f8;border-color:#1a3560;}
+
+.empty{text-align:center;padding:40px;color:#aaa;font-size:14px;}
+.empty .ei{font-size:40px;display:block;margin-bottom:10px;}
+
+/* TABS */
+.tabs{display:flex;gap:0;border-bottom:2px solid #dde3f0;margin-bottom:16px;}
+.tab-btn{padding:10px 20px;font-size:13px;font-weight:700;background:none;border:none;color:#888;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;}
+.tab-btn.active{color:#1a3560;border-bottom-color:#1a3560;}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+
+@media(max-width:700px){
+  .metrics{grid-template-columns:1fr 1fr;}
+  .detail-grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <span class="logo-icon">⚡</span>
+    <div>
+      <h1>MB Energia — Auditoria de Faturas</h1>
+      <p>COSERN + Origo Energia — Verificação automática de desconto GDC</p>
+    </div>
+  </div>
+</div>
+
+<div class="app">
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="goTab('upload')">📤 Upload de PDFs</button>
+    <button class="tab-btn" onclick="goTab('resultados')" id="tab-res-btn">📊 Resultados</button>
+  </div>
+
+  <!-- TAB UPLOAD -->
+  <div class="tab-panel active" id="tab-upload">
+    <div class="card">
+      <div class="card-title">📂 Faturas para análise</div>
+      <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()"
+           ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropFiles(event)">
+        <input type="file" id="file-input" multiple accept=".pdf" onchange="addFiles(this.files)"/>
+        <span class="icon">📄</span>
+        <p><strong>Clique aqui</strong> ou arraste os PDFs das faturas</p>
+        <p class="sub">COSERN e Origo — qualquer quantidade, qualquer ordem</p>
+      </div>
+      <div class="file-list" id="file-list"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">⚙ Configuração</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+        <div>
+          <label style="font-size:12px;color:#666;display:block;margin-bottom:4px;">Desconto contratado (%)</label>
+          <input type="number" id="desc-esp" value="20" min="1" max="100"
+                 style="width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-size:13px;"/>
+        </div>
+        <div>
+          <label style="font-size:12px;color:#666;display:block;margin-bottom:4px;">URL do servidor (api.php)</label>
+          <input type="text" id="server-url" value="/processar"
+                 style="width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-size:13px;"/>
+        </div>
+        <div style="display:flex;align-items:flex-end;">
+          <button class="btn-run" onclick="analisar()" id="btn-run">
+            🔍 Analisar Faturas
+          </button>
+        </div>
+      </div>
+      <div class="progress"><div class="progress-bar" id="prog"></div></div>
+      <div class="status-msg" id="status-msg"></div>
+    </div>
+  </div>
+
+  <!-- TAB RESULTADOS -->
+  <div class="tab-panel" id="tab-resultados">
+    <div id="res-area">
+      <div class="empty">
+        <span class="ei">📊</span>
+        Faça o upload e análise das faturas para ver os resultados.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let arquivos = [];
+let resultados = [];
+
+// ── DRAG & DROP ─────────────────────────────────────────────
+function dragOver(e){ e.preventDefault(); document.getElementById('drop-zone').classList.add('over'); }
+function dragLeave(e){ document.getElementById('drop-zone').classList.remove('over'); }
+function dropFiles(e){
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('over');
+  addFiles(e.dataTransfer.files);
+}
+function addFiles(files){
+  Array.from(files).forEach(f => { if(f.name.toLowerCase().endsWith('.pdf')) arquivos.push(f); });
+  renderFiles();
+}
+function removeFile(i){ arquivos.splice(i,1); renderFiles(); }
+
+function renderFiles(){
+  const el = document.getElementById('file-list');
+  if(!arquivos.length){ el.innerHTML=''; return; }
+  el.innerHTML = arquivos.map((f,i) => {
+    const tp = detectTipoNome(f.name);
+    const tpLabel = tp === 'cosern' ? 'COSERN' : tp === 'origo' ? 'ORIGO' : '?';
+    const tpClass = tp === 'cosern' ? 'tp-cosern' : tp === 'origo' ? 'tp-origo' : 'tp-?';
+    return `<div class="file-pill">
+      <span class="fn">${f.name}</span>
+      <span class="tp ${tpClass}">${tpLabel}</span>
+      <button class="rm" onclick="removeFile(${i})">×</button>
+    </div>`;
+  }).join('');
+}
+
+function detectTipoNome(nome){
+  nome = nome.toLowerCase();
+  if(nome.includes('origo') || nome.includes('oring')) return 'origo';
+  if(nome.includes('cosern') || nome.includes('neoenergia') || nome.includes('007')) return 'cosern';
+  return '?';
+}
+
+// ── TABS ─────────────────────────────────────────────────────
+function goTab(t){
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + t).classList.add('active');
+  const idx = t === 'upload' ? 0 : 1;
+  document.querySelectorAll('.tab-btn')[idx].classList.add('active');
+}
+
+// ── ANÁLISE ──────────────────────────────────────────────────
+async function analisar(){
+  if(!arquivos.length){ alert('Adicione ao menos um PDF.'); return; }
+  const btn = document.getElementById('btn-run');
+  btn.disabled = true;
+  setP(10, 'Enviando arquivos para análise...');
+
+  try {
+    const form = new FormData();
+    arquivos.forEach(f => form.append('faturas', f));
+
+    const url = document.getElementById('server-url').value.trim() || '/processar';
+    setP(30, 'Processando PDFs...');
+
+    const resp = await fetch(url, { method: 'POST', body: form });
+    if(!resp.ok) throw new Error('Erro no servidor: ' + resp.status);
+
+    setP(80, 'Calculando descontos...');
+    const data = await resp.json();
+
+    if(data.erro) throw new Error(data.erro);
+
+    const descEsp = parseFloat(document.getElementById('desc-esp').value) / 100 || 0.20;
+    // Recalcula com o desconto configurado pelo usuário
+    data.pares = data.pares.map(p => {
+      if(p.sem_cosern || p.sem_origo) return p;
+      p.desc_esp = descEsp * 100;
+      const diff = p.desc_real - p.desc_esp;
+      p.status = diff >= -1 ? 'conforme' : diff >= -5 ? 'atencao' : 'nao_conforme';
+      return p;
+    });
+
+    resultados = [...resultados, ...data.pares];
+    setP(100, `✓ ${data.pares.length} par(es) analisado(s) com sucesso!`);
+    renderResultados();
+    goTab('resultados');
+
+  } catch(e) {
+    setP(0, '');
+    alert('Erro: ' + e.message);
+  }
+  btn.disabled = false;
+}
+
+function setP(pct, msg){
+  document.getElementById('prog').style.width = pct + '%';
+  document.getElementById('status-msg').textContent = msg;
+}
+
+// ── FORMATAÇÃO ───────────────────────────────────────────────
+function R(n){ return 'R$ ' + Number(n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function P(n){ return Number(n).toFixed(1) + '%'; }
+
+// ── RENDERIZAR RESULTADOS ────────────────────────────────────
+function renderResultados(){
+  const el = document.getElementById('res-area');
+  if(!resultados.length) return;
+
+  const pares = resultados.filter(r => !r.sem_cosern && !r.sem_origo);
+  const totalRef   = pares.reduce((s,r) => s + (r.ref_bruta||0), 0);
+  const totalPago  = pares.reduce((s,r) => s + (r.total_pago||0), 0);
+  const totalEco   = pares.reduce((s,r) => s + (r.economia||0), 0);
+  const descMedio  = totalRef > 0 ? (totalEco / totalRef * 100) : 0;
+  const nOk   = pares.filter(r => r.status === 'conforme').length;
+  const nWarn = pares.filter(r => r.status === 'atencao').length;
+  const nErr  = pares.filter(r => r.status === 'nao_conforme').length;
+  const gStatus = nErr > 0 ? 'err' : nWarn > 0 ? 'warn' : 'ok';
+  const alertas = pares.filter(r => r.status !== 'conforme');
+
+  el.innerHTML = `
+    <div class="metrics">
+      <div class="metric">
+        <div class="lbl">Ref. bruta COSERN</div>
+        <div class="val">${R(totalRef)}</div>
+        <div class="sub">sem créditos GD</div>
+      </div>
+      <div class="metric">
+        <div class="lbl">Total pago conjunto</div>
+        <div class="val">${R(totalPago)}</div>
+        <div class="sub">COSERN + Origo</div>
+      </div>
+      <div class="metric">
+        <div class="lbl">Economia total</div>
+        <div class="val ${gStatus}">${R(totalEco)}</div>
+        <div class="sub">${R(totalRef)} − ${R(totalPago)}</div>
+      </div>
+      <div class="metric">
+        <div class="lbl">Desconto médio real</div>
+        <div class="val ${gStatus}">${P(descMedio)}</div>
+        <div class="sub">${nOk} conforme · ${nWarn} atenção · ${nErr} não conforme</div>
+      </div>
+    </div>
+
+    ${alertas.map(r => `
+      <div class="alerta ${r.status === 'nao_conforme' ? 'err' : 'warn'}">
+        <span>${r.status === 'nao_conforme' ? '✕' : '⚠'}</span>
+        <span>
+          <strong>${r.instalacao || '—'} ${r.uc ? '— UC ' + r.uc : ''}</strong> — ${r.competencia}:
+          desconto real <strong>${P(r.desc_real)}</strong> vs esperado <strong>${P(r.desc_esp)}</strong>
+          ${r.cobrancas_adic > 0 ? ` · ⚠ Cobranças adicionais Origo: ${R(r.cobrancas_adic)}` : ''}
+        </span>
+      </div>`).join('')}
+
+    ${resultados.filter(r => r.sem_cosern || r.sem_origo).map(r => `
+      <div class="alerta warn">
+        <span>⚠</span>
+        <span>${r.sem_cosern ? 'Fatura COSERN não encontrada' : 'Fatura Origo não encontrada'} para
+        <strong>${r.instalacao || r.competencia}</strong></span>
+      </div>`).join('')}
+
+    <div class="card" style="margin-top:0">
+      <div class="card-title">📋 Detalhe por par de fatura</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>Instalação</th><th>UC</th><th>Ref.</th>
+            <th>Ref. COSERN</th><th>Pago COSERN</th><th>Pago Origo</th>
+            <th>Total pago</th><th>Economia</th><th>Desc. real</th><th>Esperado</th><th>Status</th>
+          </tr></thead>
+          <tbody>
+            ${pares.map(r => `<tr>
+              <td class="strong">${r.instalacao || '—'}</td>
+              <td>${r.uc || '—'}</td>
+              <td>${r.competencia}</td>
+              <td>${R(r.ref_bruta)}</td>
+              <td>${R(r.total_cosern)}</td>
+              <td>${R(r.total_origo)}</td>
+              <td class="strong">${R(r.total_pago)}</td>
+              <td class="${r.status === 'conforme' ? 'ok' : r.status === 'atencao' ? 'warn' : 'err'}">${R(r.economia)}</td>
+              <td class="${r.status === 'conforme' ? 'ok' : r.status === 'atencao' ? 'warn' : 'err'}">${P(r.desc_real)}</td>
+              <td>${P(r.desc_esp)}</td>
+              <td><span class="tag ${r.status === 'conforme' ? 'ok' : r.status === 'atencao' ? 'warn' : 'err'}">
+                ${r.status === 'conforme' ? '✅ Conforme' : r.status === 'atencao' ? '⚠ Atenção' : '✕ Não conforme'}
+              </span></td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    ${pares.map(r => `
+      <div class="card">
+        <div class="card-title">🔍 ${r.instalacao || '—'} ${r.uc ? '— UC ' + r.uc : ''} — ${r.competencia}
+          <span class="tag ${r.status === 'conforme' ? 'ok' : r.status === 'atencao' ? 'warn' : 'err'}" style="margin-left:auto;">
+            ${r.status === 'conforme' ? '✅ Conforme' : r.status === 'atencao' ? '⚠ Atenção' : '✕ Não conforme'}
+          </span>
+        </div>
+        <div class="detail-grid">
+          <div class="detail-card">
+            <h4>⚡ Fatura COSERN</h4>
+            <div class="dr"><span class="dl">Consumo</span><span class="dv">${Number(r.consumo_kwh).toLocaleString('pt-BR')} kWh</span></div>
+            <div class="dr"><span class="dl">TUSD</span><span class="dv">${R(r.tusd)}</span></div>
+            <div class="dr"><span class="dl">TE</span><span class="dv">${R(r.te)}</span></div>
+            <div class="dr"><span class="dl">Bandeira tarifária</span><span class="dv">${R(r.bandeira)}</span></div>
+            <div class="dr"><span class="dl">Iluminação pública</span><span class="dv">${R(r.ip)}</span></div>
+            ${r.parcelas > 0 ? `<div class="dr"><span class="dl">Parcelas</span><span class="dv warn">${R(r.parcelas)}</span></div>` : ''}
+            <hr class="sep"/>
+            <div class="dr"><span class="dl">Ref. bruta (sem GD)</span><span class="dv accent">${R(r.ref_bruta)}</span></div>
+            <div class="dr"><span class="dl">Compensação GD</span><span class="dv">− ${R(r.compensacao_gd)}</span></div>
+            <div class="dr"><span class="dl"><strong>Total pago COSERN</strong></span><span class="dv"><strong>${R(r.total_cosern)}</strong></span></div>
+            ${r.base_icms > 0 ? `<div class="dr"><span class="dl">Base ICMS</span><span class="dv">${R(r.base_icms)}</span></div>` : ''}
+            ${r.creditos_kwh > 0 ? `<div class="dr"><span class="dl">Créditos utilizados</span><span class="dv">${Number(r.creditos_kwh).toLocaleString('pt-BR')} kWh</span></div>` : ''}
+          </div>
+          <div class="detail-card">
+            <h4>☀ Fatura Origo</h4>
+            <div class="dr"><span class="dl">Origo bruto</span><span class="dv">${R(r.origo_bruto)}</span></div>
+            <div class="dr"><span class="dl">Dedução PIS/COFINS</span><span class="dv">− ${R(r.pis_cofins)}</span></div>
+            ${r.desc_comerciais > 0 ? `<div class="dr"><span class="dl">Descontos comerciais</span><span class="dv ok">− ${R(r.desc_comerciais)}</span></div>` : ''}
+            ${r.cobrancas_adic > 0 ? `<div class="dr"><span class="dl">Cobranças adicionais</span><span class="dv err">+ ${R(r.cobrancas_adic)}</span></div>` : ''}
+            <div class="dr"><span class="dl"><strong>Total pago Origo</strong></span><span class="dv"><strong>${R(r.total_origo)}</strong></span></div>
+            <hr class="sep"/>
+            <div class="dr"><span class="dl">Total pago conjunto</span><span class="dv accent">${R(r.total_pago)}</span></div>
+            <div class="dr"><span class="dl">Economia obtida</span><span class="dv ${r.status === 'conforme' ? 'ok' : r.status === 'atencao' ? 'warn' : 'err'}">${R(r.economia)}</span></div>
+            <hr class="sep"/>
+            <div class="dr">
+              <span class="dl"><strong>Desconto real</strong></span>
+              <span class="dv ${r.status === 'conforme' ? 'ok' : r.status === 'atencao' ? 'warn' : 'err'}" style="font-size:18px;">${P(r.desc_real)}</span>
+            </div>
+            <div class="dr"><span class="dl">Desconto esperado</span><span class="dv">${P(r.desc_esp)}</span></div>
+            <div class="dr"><span class="dl">Diferença</span>
+              <span class="dv ${(r.desc_real - r.desc_esp) >= 0 ? 'ok' : 'err'}">${P(r.desc_real - r.desc_esp)}</span>
+            </div>
+          </div>
+        </div>
+      </div>`).join('')}
+
+    <div class="export-row">
+      <button class="btn-exp" onclick="exportCSV()">↓ Exportar CSV</button>
+      <button class="btn-exp" onclick="window.print()">🖨 Imprimir</button>
+      <button class="btn-exp" onclick="limpar()" style="color:#c0392b;">✕ Limpar resultados</button>
+    </div>
+  `;
+}
+
+function exportCSV(){
+  if(!resultados.length){ alert('Nenhum resultado.'); return; }
+  const rows = [['Instalação','UC','Competência','Ref COSERN','TUSD','TE','Bandeira','IP','Parcelas','Comp GD','Pago COSERN','Origo bruto','PIS/COFINS','Desc Comerciais','Cobranças Adicionais','Pago Origo','Total Pago','Economia','Desc Real %','Desc Esperado %','Status']];
+  resultados.filter(r => !r.sem_cosern && !r.sem_origo).forEach(r => rows.push([
+    r.instalacao, r.uc, r.competencia,
+    r.ref_bruta, r.tusd, r.te, r.bandeira, r.ip, r.parcelas, r.compensacao_gd,
+    r.total_cosern, r.origo_bruto, r.pis_cofins, r.desc_comerciais, r.cobrancas_adic,
+    r.total_origo, r.total_pago, r.economia,
+    r.desc_real.toFixed(2), r.desc_esp.toFixed(2),
+    r.status === 'conforme' ? 'Conforme' : r.status === 'atencao' ? 'Atenção' : 'Não conforme'
+  ]));
+  const csv = rows.map(r => r.map(v => '"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='auditoria_energia.csv'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function limpar(){
+  if(!confirm('Limpar todos os resultados?')) return;
+  resultados = [];
+  document.getElementById('res-area').innerHTML = '<div class="empty"><span class="ei">📊</span>Nenhum resultado ainda.</div>';
+  goTab('upload');
+}
+</script>
+</body>
+</html>
