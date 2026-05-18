@@ -79,41 +79,53 @@ def cruzar_pares(faturas):
     return pares
 
 def calcular_auditoria(c, o, desc_esp=0.20):
-    ref_bruta    = (c.get('tusd',0) + c.get('te',0) + c.get('bandeira',0) +
+    ref_total    = (c.get('tusd',0) + c.get('te',0) + c.get('bandeira',0) +
                     c.get('iluminacao_publica',0) + c.get('parcelas',0))
+    g1_credito   = c.get('g1_credito', 0)
+    g2_credito   = c.get('g2_credito', 0)
+    # Base para desconto Origo = ref total SEM G2 (G2 é geração própria, não conta)
+    ref_origo    = ref_total - g2_credito
     total_cosern = c.get('total_fatura', 0)
     total_origo  = o.get('total_origo', 0)
     total_pago   = total_cosern + total_origo
-    economia     = ref_bruta - total_pago
-    desc_real    = (economia / ref_bruta * 100) if ref_bruta else 0
+    economia     = ref_origo - total_pago
+    desc_real    = (economia / ref_origo * 100) if ref_origo else 0
     diff         = desc_real - (desc_esp * 100)
     status       = 'conforme' if diff >= -1 else 'atencao' if diff >= -5 else 'nao_conforme'
 
+    cliente = c.get('cliente','') or o.get('cliente','')
+    torre   = c.get('torre','')
+    nome    = f"{cliente} — Torre {torre}" if torre else cliente
+
     return {
-        'instalacao':   c.get('cliente','') or o.get('cliente',''),
-        'uc':           c.get('uc','')      or o.get('uc',''),
-        'competencia':  c.get('competencia','') or o.get('competencia',''),
-        'consumo_kwh':  c.get('consumo_kwh', 0),
-        'ref_bruta':    round(ref_bruta, 2),
-        'tusd':         c.get('tusd', 0),
-        'te':           c.get('te', 0),
-        'bandeira':     c.get('bandeira', 0),
-        'ip':           c.get('iluminacao_publica', 0),
-        'parcelas':     c.get('parcelas', 0),
-        'compensacao_gd': c.get('compensacao_gd', 0),
-        'total_cosern': round(total_cosern, 2),
-        'origo_bruto':  o.get('origo_bruto', 0),
-        'pis_cofins':   o.get('pis_cofins', 0),
+        'instalacao':    nome,
+        'uc':            c.get('uc','') or o.get('uc',''),
+        'torre':         torre,
+        'competencia':   c.get('competencia','') or o.get('competencia',''),
+        'consumo_kwh':   c.get('consumo_kwh', 0),
+        'ref_total':     round(ref_total, 2),
+        'ref_origo':     round(ref_origo, 2),
+        'tusd':          c.get('tusd', 0),
+        'te':            c.get('te', 0),
+        'bandeira':      c.get('bandeira', 0),
+        'ip':            c.get('iluminacao_publica', 0),
+        'parcelas':      c.get('parcelas', 0),
+        'g1_credito':    round(g1_credito, 2),
+        'g1_kwh':        c.get('g1_kwh', 0),
+        'g2_credito':    round(g2_credito, 2),
+        'g2_kwh':        c.get('g2_kwh', 0),
+        'total_cosern':  round(total_cosern, 2),
+        'origo_bruto':   o.get('origo_bruto', 0),
+        'pis_cofins':    o.get('pis_cofins', 0),
         'desc_comerciais': o.get('descontos_comerciais', 0),
         'cobrancas_adic':  o.get('cobrancas_adicionais', 0),
-        'total_origo':  round(total_origo, 2),
-        'total_pago':   round(total_pago, 2),
-        'economia':     round(economia, 2),
-        'desc_real':    round(desc_real, 2),
-        'desc_esp':     desc_esp * 100,
-        'base_icms':    c.get('base_icms', 0),
-        'creditos_kwh': c.get('creditos_kwh', 0),
-        'status':       status,
+        'total_origo':   round(total_origo, 2),
+        'total_pago':    round(total_pago, 2),
+        'economia':      round(economia, 2),
+        'desc_real':     round(desc_real, 2),
+        'desc_esp':      desc_esp * 100,
+        'base_icms':     c.get('base_icms', 0),
+        'status':        status,
         'arquivo_cosern': c.get('arquivo',''),
         'arquivo_origo':  o.get('arquivo',''),
     }
