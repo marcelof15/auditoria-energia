@@ -416,7 +416,7 @@ function renderResultados(){
       </div>`).join('')}
 
     <div class="export-row">
-      <button class="btn-exp" onclick="exportCSV()">↓ Exportar CSV</button>
+      <button class="btn-exp" onclick="exportExcel()">↓ Exportar Excel</button>
       <button class="btn-exp" onclick="window.print()">🖨 Imprimir</button>
       <button class="btn-exp" onclick="limpar()" style="color:#c0392b;">✕ Limpar resultados</button>
     </div>
@@ -441,6 +441,21 @@ function exportCSV(){
   URL.revokeObjectURL(url);
 }
 
+async function exportExcel(){
+  if(!resultados.length){ alert('Nenhum resultado.'); return; }
+  const descEsp = parseFloat(document.getElementById('desc-esp').value)||20;
+  const resp = await fetch('/exportar',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({pares: resultados, desc_esp: descEsp})
+  });
+  if(!resp.ok){ alert('Erro ao gerar Excel.'); return; }
+  const blob = await resp.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download='auditoria_energia.xlsx'; a.click();
+  URL.revokeObjectURL(url);
+}
 function limpar(){
   if(!confirm('Limpar todos os resultados?')) return;
   resultados = [];
