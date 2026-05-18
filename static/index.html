@@ -280,7 +280,7 @@ function renderResultados(){
   if(!resultados.length) return;
 
   const pares = resultados.filter(r => !r.sem_cosern && !r.sem_origo);
-  const totalRef   = pares.reduce((s,r) => s + (r.ref_bruta||0), 0);
+  const totalRef   = pares.reduce((s,r) => s + (r.ref_origo||0), 0);
   const totalPago  = pares.reduce((s,r) => s + (r.total_pago||0), 0);
   const totalEco   = pares.reduce((s,r) => s + (r.economia||0), 0);
   const descMedio  = totalRef > 0 ? (totalEco / totalRef * 100) : 0;
@@ -345,7 +345,7 @@ function renderResultados(){
               <td class="strong">${r.instalacao || '—'}</td>
               <td>${r.uc || '—'}</td>
               <td>${r.competencia}</td>
-              <td>${R(r.ref_bruta)}</td>
+              <td>${R(r.ref_origo)}</td>
               <td>${R(r.total_cosern)}</td>
               <td>${R(r.total_origo)}</td>
               <td class="strong">${R(r.total_pago)}</td>
@@ -378,11 +378,19 @@ function renderResultados(){
             <div class="dr"><span class="dl">Iluminação pública</span><span class="dv">${R(r.ip)}</span></div>
             ${r.parcelas > 0 ? `<div class="dr"><span class="dl">Parcelas</span><span class="dv warn">${R(r.parcelas)}</span></div>` : ''}
             <hr class="sep"/>
-            <div class="dr"><span class="dl">Ref. bruta (sem GD)</span><span class="dv accent">${R(r.ref_bruta)}</span></div>
-            <div class="dr"><span class="dl">Compensação GD</span><span class="dv">− ${R(r.compensacao_gd)}</span></div>
+            <div class="dr"><span class="dl">Ref. total bruta</span><span class="dv">${R(r.ref_total||r.ref_origo)}</span></div>
+            <div class="dr" style="background:#f0fdf4;padding:2px 6px;border-radius:4px;margin:2px 0;">
+              <span class="dl">↳ G1 Origo (${Number(r.g1_kwh||0).toLocaleString('pt-BR')} kWh)</span>
+              <span class="dv ok">− ${R(r.g1_credito||0)}</span>
+            </div>
+            ${(r.g2_credito||0)>0?`<div class="dr" style="background:#fff8e1;padding:2px 6px;border-radius:4px;margin:2px 0;">
+              <span class="dl">↳ G2 Usina própria (${Number(r.g2_kwh||0).toLocaleString('pt-BR')} kWh) — não conta p/ desconto</span>
+              <span class="dv warn">− ${R(r.g2_credito)}</span>
+            </div>`:''}
+            <hr class="sep"/>
+            <div class="dr"><span class="dl"><strong>Base p/ desconto Origo</strong></span><span class="dv accent"><strong>${R(r.ref_origo)}</strong></span></div>
             <div class="dr"><span class="dl"><strong>Total pago COSERN</strong></span><span class="dv"><strong>${R(r.total_cosern)}</strong></span></div>
             ${r.base_icms > 0 ? `<div class="dr"><span class="dl">Base ICMS</span><span class="dv">${R(r.base_icms)}</span></div>` : ''}
-            ${r.creditos_kwh > 0 ? `<div class="dr"><span class="dl">Créditos utilizados</span><span class="dv">${Number(r.creditos_kwh).toLocaleString('pt-BR')} kWh</span></div>` : ''}
           </div>
           <div class="detail-card">
             <h4>☀ Fatura Origo</h4>
@@ -420,7 +428,7 @@ function exportCSV(){
   const rows = [['Instalação','UC','Competência','Ref COSERN','TUSD','TE','Bandeira','IP','Parcelas','Comp GD','Pago COSERN','Origo bruto','PIS/COFINS','Desc Comerciais','Cobranças Adicionais','Pago Origo','Total Pago','Economia','Desc Real %','Desc Esperado %','Status']];
   resultados.filter(r => !r.sem_cosern && !r.sem_origo).forEach(r => rows.push([
     r.instalacao, r.uc, r.competencia,
-    r.ref_bruta, r.tusd, r.te, r.bandeira, r.ip, r.parcelas, r.compensacao_gd,
+    r.ref_origo, r.tusd, r.te, r.bandeira, r.ip, r.parcelas, r.g1_credito,
     r.total_cosern, r.origo_bruto, r.pis_cofins, r.desc_comerciais, r.cobrancas_adic,
     r.total_origo, r.total_pago, r.economia,
     r.desc_real.toFixed(2), r.desc_esp.toFixed(2),
